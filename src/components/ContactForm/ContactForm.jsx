@@ -1,81 +1,63 @@
-import { selectContacts } from 'redux/Contacts/selectors';
-import { nanoid } from 'nanoid';
+import css from "./ContactForm.module.css";
+import { useId } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import { useDispatch } from "react-redux";
+import { addContact } from "../../redux/contactsOps";
 
-import { useDispatch, useSelector } from 'react-redux';
-import { addContacts } from 'redux/Contacts/operations';
-import { useState } from 'react';
-import { Form, Input, Label } from './ContactForm.styled';
-import ButtonAdd from 'components/Button/ButtonAdd';
+const FeedbackSchema = Yup.object().shape({
+  name: Yup.string()
+    .min(3, "Too Short!")
+    .max(50, "Too Long!")
+    .required("Required"),
+  number: Yup.string()
+    .min(3, "Too Short!")
+    .max(50, "Too Long!")
+    .required("Required"),
+});
 
-
-export default function ContactForm() {
-  const contacts = useSelector(selectContacts);
+const ContactForm = () => {
   const dispatch = useDispatch();
-  const [name, setName] = useState('');
-  const [number, setNumber] = useState('');
 
-  const nameInputId = nanoid();
-  const numberInputId = nanoid();
-
-  const handleSubmit = event => {
-    event.preventDefault();
-
-    const contact = {
-      name,
-      number,
-      id: nanoid(),
-    };
-
-    const isExist = contacts.find(
-      ({ name }) =>
-        name.toLowerCase().trim() === contact.name.toLowerCase().trim()
-    );
-
-    if (isExist) {
-      alert(`${contact.name} is already in contacts.`);
-      return;
-    }
-
-    dispatch(addContacts(contact));
-    setName('');
-    setNumber('');
+  const handleSubmit = (values, actions) => {
+    actions.resetForm();
+    dispatch(addContact(values));
   };
 
-  const handleNameChange = event => {
-    setName(event.target.value);
-  };
-
-  const handleNumberChange = event => {
-    setNumber(event.target.value);
-  };
+  const nameFieldId = useId();
+  const numberFieldId = useId();
 
   return (
-    <Form onSubmit={handleSubmit}>
-      <Label htmlFor={nameInputId}>
-        Name
-        <Input
-          type="text"
-          name="name"
-          onChange={handleNameChange}
-          value={name}
-          pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
-          title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
-          required
-          id={nameInputId}
-        />
-        Number
-        <Input
-          type="tel"
-          name="number"
-          value={number}
-          onChange={handleNumberChange}
-          pattern="\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}"
-          title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
-          required
-          id={numberInputId}
-        />
-      </Label>
-      <ButtonAdd />
-    </Form>
+    <Formik
+      initialValues={{
+        name: "",
+        number: "",
+      }}
+      onSubmit={handleSubmit}
+      validationSchema={FeedbackSchema}
+    >
+      <Form className={css.formContainer}>
+        <div className={css.field}>
+          <label htmlFor={nameFieldId} className={css.label}>
+            Name
+          </label>
+          <Field type="text" name="name" id={nameFieldId} />
+          <ErrorMessage name="name" component="span" className={css.error} />
+        </div>
+        <div className={css.field}>
+          <label htmlFor={numberFieldId} className={css.label}>
+            Number
+          </label>
+          <Field type="tel" name="number" id={numberFieldId} />
+          <ErrorMessage name="number" component="span" className={css.error} />
+        </div>
+
+        <button type="submit" className={css.btn}>
+          Add contact
+        </button>
+      </Form>
+    </Formik>
   );
-}
+};
+
+export default ContactForm;
